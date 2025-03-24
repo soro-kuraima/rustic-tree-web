@@ -1,68 +1,148 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { useQuery } from 'convex/react';
-import { motion } from 'framer-motion';
 import { api } from '../../../convex/_generated/api';
-import { ArrowRight } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import RoomCard from '../rooms/RoomCard';
+import { useRoomsStore } from '../../stores/rooms-store';
+import { Room } from '../../types';
+import { Card, CardContent, CardFooter } from '../ui/card';
+import { Button } from '../ui/button';
+import { Skeleton } from '../ui/skeleton';
 
 const FeaturedRooms: React.FC = () => {
-  // Fetch featured rooms from Convex
+  const { setFeaturedRooms } = useRoomsStore();
   const featuredRooms = useQuery(api.rooms.getFeatured);
-  
-  return (
-    <section className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-3xl font-bold mb-4">Featured Accommodations</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover our selection of premium rooms and suites, each designed to provide an exceptional stay with stunning views and modern comforts.
-          </p>
-        </motion.div>
-        
-        {featuredRooms === undefined ? (
-          // Loading state
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+  useEffect(() => {
+    if (featuredRooms) {
+      setFeaturedRooms(featuredRooms);
+    }
+  }, [featuredRooms, setFeaturedRooms]);
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+  };
+
+  if (!featuredRooms) {
+    return (
+      <section className="py-16 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-12">Featured Accommodations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-96 bg-gray-200 animate-pulse rounded-lg"></div>
+              <Card key={i} className="overflow-hidden h-96">
+                <Skeleton className="h-48 w-full" />
+                <CardContent className="p-6">
+                  <Skeleton className="h-6 w-3/4 mb-4" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-2/3" />
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                  <Skeleton className="h-10 w-full" />
+                </CardFooter>
+              </Card>
             ))}
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredRooms.slice(0, 3).map((room, index) => (
-                <RoomCard
-                  key={room._id}
-                  id={room._id}
-                  name={room.name}
-                  type={room.type}
-                  shortDescription={room.shortDescription}
-                  price={room.price}
-                  capacity={room.capacity}
-                  size={room.size}
-                  images={room.images}
-                  index={index}
-                />
-              ))}
-            </div>
-            
-            <div className="text-center mt-12">
-              <Link to="/rooms">
-                <Button size="lg" className="gap-2">
-                  View All Rooms
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-          </>
-        )}
+        </div>
+      </section>
+    );
+  }
+
+  if (featuredRooms.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="py-16 px-4 bg-stone-50">
+      <div className="container mx-auto">
+        <motion.h2 
+          className="text-3xl font-bold text-center mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+        >
+          Featured Accommodations
+        </motion.h2>
+        <motion.p 
+          className="text-lg text-center text-gray-600 mb-12 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          Discover our handpicked selection of exceptional rooms and suites for your mountain getaway
+        </motion.p>
+        
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+        >
+          {featuredRooms.map((room: Room) => (
+            <motion.div key={room._id} variants={item}>
+              <Card className="overflow-hidden h-full flex flex-col transition-transform duration-300 hover:shadow-lg">
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={room.images[0] || "/api/placeholder/400/300"} 
+                    alt={room.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                  />
+                  {room.discount && (
+                    <span className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded">
+                      {room.discount}% OFF
+                    </span>
+                  )}
+                </div>
+                <CardContent className="p-6 flex-grow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold">{room.name}</h3>
+                    <div className="text-lg font-bold text-amber-600">
+                      ${room.price}
+                      <span className="text-sm text-gray-500">/night</span>
+                    </div>
+                  </div>
+                  <p className="text-gray-600 mb-4">{room.shortDescription}</p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span className="mr-3">{room.size} m²</span>
+                    <span className="mr-3">•</span>
+                    <span>{room.capacity} {room.capacity === 1 ? 'Guest' : 'Guests'}</span>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                  <Link to={`/rooms/${room._id}`} className="w-full">
+                    <Button className="w-full" variant="default">View Details</Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+        
+        <motion.div 
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Link to="/rooms">
+            <Button variant="outline" size="lg">View All Rooms</Button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

@@ -1,45 +1,65 @@
 import { create } from 'zustand';
-import { DateRange } from '../types';
+import { Booking, DateRange } from '../types';
+import { Id } from '../../convex/_generated/dataModel';
 
-// This store only manages temporary booking state
-// Actual booking data will be fetched directly from Convex
 interface BookingState {
+  bookings: Booking[];
   currentBooking: {
-    roomId: string | null;
-    checkIn: Date | null;
-    checkOut: Date | null;
+    roomId: Id<"rooms"> | null;
+    dateRange: DateRange | null;
     guests: number;
     totalPrice: number;
   };
-  
-  setBookingDetails: (details: Partial<BookingState['currentBooking']>) => void;
-  clearBookingDetails: () => void;
+  isAvailable: boolean;
+  isLoading: boolean;
+  error: string | null;
+
+  setBookings: (bookings: Booking[]) => void;
+  setRoomId: (roomId: Id<"rooms"> | null) => void;
+  setDateRange: (dateRange: DateRange | null) => void;
+  setGuests: (guests: number) => void;
+  setTotalPrice: (price: number) => void;
+  setAvailability: (isAvailable: boolean) => void;
+  clearCurrentBooking: () => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
 }
 
 export const useBookingStore = create<BookingState>((set) => ({
+  bookings: [],
   currentBooking: {
     roomId: null,
-    checkIn: null,
-    checkOut: null,
+    dateRange: null,
     guests: 1,
     totalPrice: 0,
   },
-  
-  setBookingDetails: (details) => {
-    set((state) => ({
-      currentBooking: { ...state.currentBooking, ...details },
-    }));
-  },
-  
-  clearBookingDetails: () => {
-    set({
-      currentBooking: {
-        roomId: null,
-        checkIn: null,
-        checkOut: null,
-        guests: 1,
-        totalPrice: 0,
-      },
-    });
-  },
+  isAvailable: false,
+  isLoading: false,
+  error: null,
+
+  setBookings: (bookings) => set({ bookings }),
+  setRoomId: (roomId) => set((state) => ({ 
+    currentBooking: { ...state.currentBooking, roomId } 
+  })),
+  setDateRange: (dateRange) => set((state) => ({ 
+    currentBooking: { ...state.currentBooking, dateRange } 
+  })),
+  setGuests: (guests) => set((state) => ({ 
+    currentBooking: { ...state.currentBooking, guests } 
+  })),
+  setTotalPrice: (totalPrice) => set((state) => ({ 
+    currentBooking: { ...state.currentBooking, totalPrice } 
+  })),
+  setAvailability: (isAvailable) => set({ isAvailable }),
+  clearCurrentBooking: () => set({ 
+    currentBooking: {
+      roomId: null,
+      dateRange: null,
+      guests: 1,
+      totalPrice: 0,
+    },
+    isAvailable: false 
+  }),
+  setLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
 }));

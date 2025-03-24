@@ -5,6 +5,10 @@ import { v } from "convex/values";
 export const getUserBookings = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called getUserBookings without authentication present');
+    }
     return await ctx.db
       .query("bookings")
       .filter(q => q.eq(q.field("userId"), args.userId))
@@ -22,6 +26,10 @@ export const create = mutation({
     totalPrice: v.number(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called createBookings without authentication present');
+    }
     // Check availability
     const existingBookings = await ctx.db
       .query("bookings")
@@ -69,6 +77,10 @@ export const checkAvailability = query({
     checkOut: v.number(),
   },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called checkAvailability without authentication present');
+    }
     const existingBookings = await ctx.db
       .query("bookings")
       .filter(q => q.eq(q.field("roomId"), args.roomId))
@@ -92,5 +104,98 @@ export const checkAvailability = query({
       .collect();
       
     return existingBookings.length === 0;
+  },
+});
+
+/**
+ * Get a specific booking by ID
+ */
+export const getById = query({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called getById without authentication present');
+    }
+    
+    const booking = await ctx.db.get(args.id);
+    
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    
+    // Check if user owns this booking
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    
+    if (!user || booking.userId !== user._id) {
+      throw new Error('Not authorized to view this booking');
+    }
+    
+    return booking;
+  },
+});
+
+/**
+ * Get recent bookings for a user with a limit
+ */
+export const getRecentUserBookings = query({
+  args: { 
+    userId: v.id("users"),
+    limit: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called getRecentUserBookings without authentication present');
+    }
+    
+    // Default limit to 5 if not provided
+    const limit = args.limit || 5;
+    
+    return await ctx.db
+      .query("bookings")
+      .filter(q => q.eq(q.field("userId"), args.userId))
+      .order("desc")
+      .take(limit);
+  },
+});
+
+/**
+ * Cancel a booking
+ */
+export const cancelBooking = mutation({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called cancelBooking without authentication present');
+    }
+    
+    const booking = await ctx.db.get(args.id);
+    
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    
+    // Check if user owns this booking
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    
+    if (!user || booking.userId !== user._id) {
+      throw new Error('Not authorized to cancel this booking');
+    }
+    
+    // Check if booking can be cancelled
+    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+      throw new Error('This booking cannot be cancelled');
+    }
+    
+    // Update booking status
+    return await ctx.db.patch(args.id, { status: 'cancelled' });
   },
 });

@@ -1,114 +1,79 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { Calendar, MapPin } from 'lucide-react';
+import { PropertyData } from '../../types';
 
-const Hero: React.FC = () => {
-  const navigate = useNavigate();
-  
+interface HeroProps {
+  propertyData: PropertyData;
+}
+
+const Hero: React.FC<HeroProps> = ({ propertyData }) => {
   return (
-    <div className="relative h-[90vh] overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0 w-full h-full">
+    <section className="relative h-screen w-full overflow-hidden">
+      {/* Background overlay with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-transparent z-10" />
+      
+      {/* Background video or image */}
+      <div className="absolute inset-0">
         <img 
-          src="/images/hero-bg.jpg" 
-          alt="Hill Station Resort" 
+          src="/api/placeholder/1920/1080" 
+          alt="Mountain View" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-black/40"></div>
       </div>
       
-      {/* Hero Content */}
-      <div className="relative container mx-auto h-full flex items-center">
-        <motion.div 
-          className="max-w-xl text-white"
+      {/* Content */}
+      <div className="relative z-20 flex flex-col justify-center items-center h-full text-white px-4 text-center">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <motion.h1 
-            className="text-5xl font-bold mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            Experience Tranquility in the Hills
-          </motion.h1>
-          
-          <motion.p 
-            className="text-lg mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            Escape the ordinary and immerse yourself in the serene beauty of our mountain retreat. 
-            Breathtaking views, luxurious accommodations, and unforgettable experiences await.
-          </motion.p>
-          
-          <motion.div 
-            className="flex flex-col sm:flex-row gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-          >
+          <h1 className="text-5xl md:text-7xl font-bold mb-4 text-shadow">
+            {propertyData.name}
+          </h1>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <p className="text-xl md:text-2xl mb-8 max-w-2xl">
+            {propertyData.tagline}
+          </p>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <Link to="/rooms">
             <Button 
               size="lg" 
-              onClick={() => navigate('/rooms')}
-              className="gap-2"
+              className="bg-amber-500 hover:bg-amber-400 text-black text-lg transition-all shadow-lg"
             >
-              <Calendar className="h-5 w-5" />
-              Book Your Stay
+              Explore Our Rooms
             </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-white text-white hover:bg-white/10 gap-2"
-              onClick={() => navigate('/location')}
-            >
-              <MapPin className="h-5 w-5" />
-              Our Location
-            </Button>
-          </motion.div>
+          </Link>
+        </motion.div>
+        
+        <motion.div 
+          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1, duration: 1 }}
+        >
+          <div className="animate-bounce">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </motion.div>
       </div>
-      
-      {/* Overlay Cards */}
-      <div className="absolute bottom-0 left-0 right-0 container mx-auto -mb-20 hidden md:block">
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { 
-              icon: '🏔️', 
-              title: 'Panoramic Views', 
-              description: 'Wake up to breathtaking mountain vistas' 
-            },
-            { 
-              icon: '🛏️', 
-              title: 'Luxury Comfort', 
-              description: 'Premium accommodations with modern amenities' 
-            },
-            { 
-              icon: '🍽️', 
-              title: 'Local Cuisine', 
-              description: 'Experience authentic flavors of the mountains' 
-            },
-          ].map((item, index) => (
-            <motion.div
-              key={index}
-              className="bg-white p-6 rounded-lg shadow-lg"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.8 + (index * 0.2) }}
-            >
-              <div className="text-4xl mb-3">{item.icon}</div>
-              <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-              <p className="text-gray-600">{item.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
+    </section>
   );
 };
 

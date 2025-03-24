@@ -1,147 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Filter, X } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Slider } from '../../components/ui/slider';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '../../components/ui/sheet';
-import { formatCurrency } from '../../lib/utils';
+import { useRoomsStore } from '../../stores/rooms-store';
+import { RoomType } from '../../types';
+import { Card, CardContent } from '../ui/card';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Slider } from '../ui/slider';
+import { Button } from '../ui/button';
 
 const RoomFilters: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [open, setOpen] = useState(false);
+  const { filters, setFilters, clearFilters } = useRoomsStore();
   
-  // Local filter state
-  const [type, setType] = useState<string | undefined>(searchParams.get('type') || undefined);
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    Number(searchParams.get('minPrice') || 0),
-    Number(searchParams.get('maxPrice') || 500),
-  ]);
-  const [capacity, setCapacity] = useState<string | undefined>(searchParams.get('capacity') || undefined);
-  
-  // Update URL when filters change
-  const applyFilters = () => {
-    const params = new URLSearchParams();
-    
-    if (type) params.set('type', type);
-    if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
-    if (priceRange[1] < 500) params.set('maxPrice', priceRange[1].toString());
-    if (capacity) params.set('capacity', capacity);
-    
-    setSearchParams(params);
-    setOpen(false);
+  // Local state for form inputs
+  const [localFilters, setLocalFilters] = useState({
+    type: filters.type || undefined,
+    minPrice: filters.minPrice || 0,
+    maxPrice: filters.maxPrice || 1000,
+    capacity: filters.capacity || 1,
+  });
+
+  const handleTypeChange = (value: RoomType | 'all') => {
+    setLocalFilters({
+      ...localFilters,
+      type: value === 'all' ? undefined : value,
+    });
   };
-  
-  const clearFilters = () => {
-    setType(undefined);
-    setPriceRange([0, 500]);
-    setCapacity(undefined);
-    setSearchParams(new URLSearchParams());
-    setOpen(false);
+
+  const handlePriceChange = (value: number[]) => {
+    setLocalFilters({
+      ...localFilters,
+      minPrice: value[0],
+      maxPrice: value[1],
+    });
   };
-  
-  // Count active filters
-  const filterCount = [
-    type,
-    priceRange[0] > 0 || priceRange[1] < 500 ? 'price' : null,
-    capacity,
-  ].filter(Boolean).length;
-  
+
+  const handleCapacityChange = (value: number[]) => {
+    setLocalFilters({
+      ...localFilters,
+      capacity: value[0],
+    });
+  };
+
+  const handleApplyFilters = () => {
+    setFilters(localFilters);
+  };
+
+  const handleClearFilters = () => {
+    setLocalFilters({
+      type: undefined,
+      minPrice: 0,
+      maxPrice: 1000,
+      capacity: 1,
+    });
+    clearFilters();
+  };
+
   return (
-    <div className="mb-8">
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" className="flex items-center">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter Rooms
-            {filterCount > 0 && (
-              <span className="ml-2 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                {filterCount}
-              </span>
-            )}
-          </Button>
-        </SheetTrigger>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Filter Rooms</SheetTitle>
-            <SheetDescription>
-              Adjust the filters to find your perfect accommodation
-            </SheetDescription>
-          </SheetHeader>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card>
+        <CardContent className="p-6">
+          <h3 className="text-lg font-semibold mb-6">Filter Rooms</h3>
           
-          <div className="py-6 space-y-6">
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Room Type</h3>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="standard">Standard</SelectItem>
-                  <SelectItem value="deluxe">Deluxe</SelectItem>
-                  <SelectItem value="suite">Suite</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <h3 className="text-sm font-medium">Price Range</h3>
-                <span className="text-sm text-gray-500">
-                  {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])}
-                </span>
+          {/* Room Type Filter */}
+          <div className="mb-6">
+            <h4 className="text-sm font-medium mb-3">Room Type</h4>
+            <RadioGroup 
+              value={localFilters.type || 'all'} 
+              onValueChange={(value) => handleTypeChange(value as RoomType | 'all')}
+              className="grid grid-cols-2 gap-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="all" />
+                <Label htmlFor="all">All Types</Label>
               </div>
-              <Slider
-                value={priceRange}
-                min={0}
-                max={500}
-                step={10}
-                onValueChange={setPriceRange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Capacity</h3>
-              <Select value={capacity} onValueChange={setCapacity}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Any Capacity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Person</SelectItem>
-                  <SelectItem value="2">2 People</SelectItem>
-                  <SelectItem value="3">3 People</SelectItem>
-                  <SelectItem value="4">4+ People</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="standard" id="standard" />
+                <Label htmlFor="standard">Standard</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="deluxe" id="deluxe" />
+                <Label htmlFor="deluxe">Deluxe</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="suite" id="suite" />
+                <Label htmlFor="suite">Suite</Label>
+              </div>
+            </RadioGroup>
           </div>
           
-          <SheetFooter className="flex justify-between sm:justify-between">
-            <Button variant="outline" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-2" />
+          {/* Price Range Filter */}
+          <div className="mb-6">
+            <div className="flex justify-between mb-2">
+              <h4 className="text-sm font-medium">Price Range</h4>
+              <span className="text-sm text-gray-500">
+                ${localFilters.minPrice} - ${localFilters.maxPrice}
+              </span>
+            </div>
+            <Slider
+              defaultValue={[localFilters.minPrice, localFilters.maxPrice]}
+              max={1000}
+              step={50}
+              onValueChange={handlePriceChange}
+              className="mt-4"
+            />
+          </div>
+          
+          {/* Capacity Filter */}
+          <div className="mb-6">
+            <div className="flex justify-between mb-2">
+              <h4 className="text-sm font-medium">Guests</h4>
+              <span className="text-sm text-gray-500">
+                {localFilters.capacity} {localFilters.capacity === 1 ? 'Guest' : 'Guests'}
+              </span>
+            </div>
+            <Slider
+              defaultValue={[localFilters.capacity]}
+              min={1}
+              max={6}
+              step={1}
+              onValueChange={handleCapacityChange}
+              className="mt-4"
+            />
+          </div>
+          
+          {/* Filter Action Buttons */}
+          <div className="flex space-x-3">
+            <Button 
+              onClick={handleApplyFilters} 
+              className="flex-1"
+            >
+              Apply Filters
+            </Button>
+            <Button 
+              onClick={handleClearFilters} 
+              variant="outline" 
+              className="flex-1"
+            >
               Clear
             </Button>
-            <Button onClick={applyFilters}>Apply Filters</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-    </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
 

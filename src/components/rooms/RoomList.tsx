@@ -1,70 +1,67 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { motion } from 'motion/react';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { useRoomsStore } from '../../stores/rooms-store';
 import RoomCard from './RoomCard';
-import RoomFilters from './RoomFilters';
-import { useSearchParams } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { Room } from '../../types';
+import { Skeleton } from '../ui/skeleton';
 
 const RoomList: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const { filters, setRooms, rooms, isLoading, setLoading, setError } = useRoomsStore();
   
-  // Get filter values from URL params
-  const type = searchParams.get('type') as 'standard' | 'deluxe' | 'suite' | undefined;
-  const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
-  const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
-  const capacity = searchParams.get('capacity') ? Number(searchParams.get('capacity')) : undefined;
-  
-  // Fetch rooms with filters directly from Convex
-  const rooms = useQuery(api.rooms.get, {
-    type,
-    minPrice,
-    maxPrice,
-    capacity,
+  const roomsData = useQuery(api.rooms.get, {
+    type: filters.type,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    capacity: filters.capacity,
   });
-  
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <motion.div
+
+  useEffect(() => {
+    setLoading(true);
+    if (roomsData) {
+      setRooms(roomsData);
+      setLoading(false);
+    }
+  }, [roomsData, setRooms, setLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="h-[450px]">
+            <Skeleton className="h-52 w-full mb-4" />
+            <Skeleton className="h-6 w-3/4 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-2/3 mb-4" />
+            <Skeleton className="h-8 w-full mt-6" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!rooms || rooms.length === 0) {
+    return (
+      <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        className="text-center py-16"
       >
-        <h2 className="text-3xl font-bold mb-2">Our Rooms</h2>
-        <p className="text-gray-600 mb-8">Choose from our selection of comfortable and luxurious rooms</p>
-        
-        <RoomFilters />
-        
-        {rooms === undefined ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-80 bg-gray-200 animate-pulse rounded-lg"></div>
-            ))}
-          </div>
-        ) : rooms.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold mb-2">No rooms found</h3>
-            <p className="text-gray-600">Try adjusting your filters to find available rooms.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rooms.map((room, index) => (
-              <RoomCard
-                key={room._id}
-                id={room._id}
-                name={room.name}
-                type={room.type}
-                shortDescription={room.shortDescription}
-                price={room.price}
-                capacity={room.capacity}
-                size={room.size}
-                images={room.images}
-                index={index}
-              />
-            ))}
-          </div>
-        )}
+        <h3 className="text-xl font-semibold mb-2">No Rooms Found</h3>
+        <p className="text-gray-500">
+          No rooms match your current filtering criteria. Try adjusting your filters.
+        </p>
       </motion.div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {rooms.map((room: Room, index: number) => (
+        <RoomCard key={room._id} room={room} index={index} />
+      ))}
     </div>
   );
 };
