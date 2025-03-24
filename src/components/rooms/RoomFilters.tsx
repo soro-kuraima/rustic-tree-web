@@ -15,7 +15,7 @@ const RoomFilters: React.FC = () => {
   const [localFilters, setLocalFilters] = useState({
     type: filters.type || undefined,
     minPrice: filters.minPrice || 0,
-    maxPrice: filters.maxPrice || 1000,
+    maxPrice: filters.maxPrice || 10000,
     capacity: filters.capacity || 1,
   });
 
@@ -49,7 +49,7 @@ const RoomFilters: React.FC = () => {
     setLocalFilters({
       type: undefined,
       minPrice: 0,
-      maxPrice: 1000,
+      maxPrice: 10000,
       capacity: 1,
     });
     clearFilters();
@@ -97,12 +97,12 @@ const RoomFilters: React.FC = () => {
             <div className="flex justify-between mb-2">
               <h4 className="text-sm font-medium">Price Range</h4>
               <span className="text-sm text-gray-500">
-                ${localFilters.minPrice} - ${localFilters.maxPrice}
+              ₹{localFilters.minPrice} - ₹{localFilters.maxPrice}
               </span>
             </div>
             <Slider
               defaultValue={[localFilters.minPrice, localFilters.maxPrice]}
-              max={1000}
+              max={10000}
               step={50}
               onValueChange={handlePriceChange}
               className="mt-4"

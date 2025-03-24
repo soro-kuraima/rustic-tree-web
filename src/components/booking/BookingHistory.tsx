@@ -63,7 +63,7 @@ const BookingHistory: React.FC = () => {
   }
   
   return (
-    <div>
+    <div className=''>
       <h2 className="text-2xl font-bold mb-6">Booking History</h2>
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>

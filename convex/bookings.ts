@@ -127,7 +127,7 @@ export const getById = query({
     // Check if user owns this booking
     const user = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", `clerk:${identity.subject}`))
       .unique();
     
     if (!user || booking.userId !== user._id) {
@@ -183,8 +183,12 @@ export const cancelBooking = mutation({
     // Check if user owns this booking
     const user = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", `clerk:${identity.subject}`))
       .unique();
+
+      console.log(identity)
+      console.log(user);
+      console.log(booking);
     
     if (!user || booking.userId !== user._id) {
       throw new Error('Not authorized to cancel this booking');
@@ -199,3 +203,67 @@ export const cancelBooking = mutation({
     return await ctx.db.patch(args.id, { status: 'cancelled' });
   },
 });
+
+export const confirmBooking = mutation({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called confirmBooking without authentication present');
+    }
+    
+    const booking = await ctx.db.get(args.id);
+    
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    
+    // Check if user owns this booking
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", `clerk:${identity.subject}`))
+      .unique();
+    
+    if (!user || booking.userId !== user._id) {
+      throw new Error('Not authorized to confirmed this booking');
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'completed') {
+      throw new Error('This booking cannot be confirmed');
+    }
+
+    return await ctx.db.patch(args.id, { status: 'confirmed' });
+  }
+})
+
+export const completeBooking = mutation({
+  args: { id: v.id("bookings") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error('Called completeBooking without authentication present');
+    }
+    
+    const booking = await ctx.db.get(args.id);
+    
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+    
+    // Check if user owns this booking
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", `clerk:${identity.subject}`))
+      .unique();
+    
+    if (!user || booking.userId !== user._id) {
+      throw new Error('Not authorized to cancel this booking');
+    }
+
+    if (booking.status !== 'completed') {
+      throw new Error('This booking cannot be completed');
+    }
+
+    return await ctx.db.patch(args.id, { status: 'completed' });
+  }
+})

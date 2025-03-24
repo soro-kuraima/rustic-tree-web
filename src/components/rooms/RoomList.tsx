@@ -17,6 +17,8 @@ const RoomList: React.FC = () => {
     capacity: filters.capacity,
   });
 
+  console.log(roomsData);
+
   useEffect(() => {
     setLoading(true);
     if (roomsData) {

@@ -43,7 +43,7 @@ const RoomDetailPage: React.FC = () => {
   if (!room) {
     return (
       <PageContainer>
-        <div className="py-8">
+        <div className="py-8 px-4">
           <Button variant="ghost" className="mb-6" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
@@ -77,7 +77,7 @@ const RoomDetailPage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="py-8"
+        className="py-8 px-4"
       >
         <Button variant="ghost" className="mb-6" onClick={() => navigate('/rooms')}>
           <ArrowLeft className="mr-2 h-4 w-4" />

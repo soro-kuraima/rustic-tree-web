@@ -5,6 +5,9 @@ import { Room } from '../../types';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { Id } from '../../../convex/_generated/dataModel';
 
 interface RoomCardProps {
   room: Room;
@@ -12,6 +15,11 @@ interface RoomCardProps {
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({ room, index }) => {
+  console.log(room);
+
+  const images = room?.images;
+
+  const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[] });
   // Calculate the discounted price if there's a discount
   const finalPrice = room.discount 
     ? room.price - (room.price * (room.discount / 100)) 
@@ -25,11 +33,13 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, index }) => {
     >
       <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
         <div className="relative h-52 overflow-hidden">
-          <img 
-            src={room.images[0] || "/api/placeholder/400/300"} 
+          {roomImageUrls !== undefined && roomImageUrls &&
+            <img 
+            src={roomImageUrls[0].url || "/api/placeholder/400/300"} 
             alt={room.name} 
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
+}
           {room.featured && (
             <Badge 
               className="absolute top-4 left-4 bg-amber-500 hover:bg-amber-600"
@@ -60,17 +70,17 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, index }) => {
               {room.discount ? (
                 <>
                   <span className="text-lg font-bold text-amber-600">
-                    ${finalPrice.toFixed(2)}
+                  ₹{finalPrice.toFixed(2)}
                   </span>
                   <span className="text-sm text-gray-500 ml-2 line-through">
-                    ${room.price.toFixed(2)}
+                  ₹{room.price.toFixed(2)}
                   </span>
                   <div className="text-sm text-gray-500">/night</div>
                 </>
               ) : (
                 <>
                   <span className="text-lg font-bold text-amber-600">
-                    ${room.price.toFixed(2)}
+                  ₹{room.price.toFixed(2)}
                   </span>
                   <div className="text-sm text-gray-500">/night</div>
                 </>

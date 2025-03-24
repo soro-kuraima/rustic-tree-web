@@ -23,6 +23,11 @@ const BookingPage: React.FC = () => {
   
   // Fetch room data
   const room = useQuery(api.rooms.getById, { id: parsedRoomId });
+
+  const images = room?.images;
+    
+      const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[] });
+  
   
   useEffect(() => {
     if (roomId && !room) {
@@ -33,10 +38,10 @@ const BookingPage: React.FC = () => {
     }
   }, [roomId, room, navigate]);
   
-  if (!room) {
+  if (!room && !roomImageUrls && roomImageUrls !== undefined) {
     return (
       <PageContainer>
-        <div className="py-8">
+        <div className="py-8 px-4">
           <Button variant="ghost" className="mb-6" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
@@ -70,7 +75,7 @@ const BookingPage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="py-8"
+        className="py-8 px-4"
       >
         <Button variant="ghost" className="mb-6" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -86,30 +91,30 @@ const BookingPage: React.FC = () => {
             
             <div className="mb-6">
               <img 
-                src={room.images[0] || "/api/placeholder/800/500"} 
+                src={roomImageUrls[0].url || "/api/placeholder/800/500"} 
                 alt={room.name}
                 className="w-full h-80 object-cover rounded-lg"
               />
             </div>
             
-            <div className="bg-gray-50 p-6 rounded-lg">
+            <div className="bg-transparent p-6 rounded-lg">
               <h2 className="text-xl font-bold mb-4">Room Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-600">Type</p>
-                  <p className="font-medium capitalize">{room.type}</p>
+                  <p className="font-medium text-amber-600 capitalize">{room.type}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Size</p>
-                  <p className="font-medium">{room.size} m²</p>
+                  <p className="font-medium text-amber-600">{room.size} m²</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Capacity</p>
-                  <p className="font-medium">{room.capacity} {room.capacity === 1 ? 'Guest' : 'Guests'}</p>
+                  <p className="font-medium text-amber-600">{room.capacity} {room.capacity === 1 ? 'Guest' : 'Guests'}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Price per night</p>
-                  <p className="font-medium">${room.price.toFixed(2)}</p>
+                  <p className="font-medium text-amber-600">₹{room.price.toFixed(2)}</p>
                 </div>
               </div>
             </div>
