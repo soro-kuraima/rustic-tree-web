@@ -4,7 +4,6 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
-import { useClerkUserSync } from '../hooks/useClerkUserSync';
 import PageContainer from '../components/layout/PageContainer';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
@@ -19,7 +18,6 @@ import { BookingStatus } from '../types';
 
 const BookingDetailPage: React.FC = () => {
   // Sync the user data with Convex
-  useClerkUserSync();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +32,9 @@ const BookingDetailPage: React.FC = () => {
   const room = useQuery(api.rooms.getById, { id: booking !== undefined ? booking?.roomId : "skip" as Id<'rooms'> });
 
   const images = room?.images;
+  console.log(images)
     
-    const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[]});
+    const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images !== undefined ? images as Id<"_storage">[] : []});
   
   // Actions
   // Note: These mutations would need to be implemented in your Convex backend
