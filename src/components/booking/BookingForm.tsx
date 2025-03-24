@@ -4,12 +4,10 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { useAuthStore } from '../../stores/auth-store';
 import { useBookingStore } from '../../stores/booking-store';
-import { useRoomsStore } from '../../stores/rooms-store';
 import { Button } from '../ui/button';
 import { Calendar } from '../ui/calendar';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
-import { Input } from '../ui/input';
 import { DateRange, Room } from '../../types';
 import { addDays, format, differenceInDays } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -88,7 +86,8 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
     }
   }, [availabilityParams, availabilityResult]);
 
-  const checkAvailability = () => {
+  useEffect(() => {
+    const checkAvailability = () => {
     if (!date?.from || !date?.to) return;
     
     setIsAvailabilityChecking(true);
@@ -102,15 +101,14 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
     });
   };
 
-  useEffect(() => {
     if (date?.from && date?.to) {
       // We can do this check if both dates are selected
       checkAvailability();
     }
-  }, [date]);
+  }, [date, room._id]);
 
   // Custom date change handler
-  const handleDateChange = (value: any) => {
+  const handleDateChange = (value: DateRange) => {
     setDate(value);
     // Close calendar after selecting both dates
     if (value?.from && value?.to) {
@@ -156,7 +154,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
       
       // Navigate to booking confirmation page
       navigate('/bookings');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Error creating booking. Please try again.');
       console.error(err);
     } finally {

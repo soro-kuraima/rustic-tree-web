@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { CalendarDays, Users, CreditCard, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface BookingSummaryProps {
   booking: Booking;
@@ -28,17 +29,29 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
 
   const cancelBooking = useMutation(api.bookings.cancelBooking);
   const confirmBooking = useMutation(api.bookings.confirmBooking);
-  const completeBooking = useMutation(api.bookings.completeBooking);
 
   const handleBookingStatusUpdate = async (e: React.FormEvent, action: string) => {
     e.preventDefault();
 
     if (action === "cancel") {
-      await cancelBooking({id: booking._id});
+      try {
+            await cancelBooking({ id: booking._id });
+            toast.success("Booking cancelled successfully");
+          } catch (error) {
+            toast.error("Failed to cancel booking");
+            console.error(error);
+          }
+      
     }
 
     if (action === "confirm") {
-      await confirmBooking({id: booking._id})
+      try {
+            await confirmBooking({ id: booking._id });
+            toast.success("Booking confirmed successfully");
+          } catch (error) {
+            toast.error("Failed to cancel booking");
+            console.error(error);
+          }
     }
     
   }
@@ -154,7 +167,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           )}
           
           {booking.status === 'confirmed' && (
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => navigate(`/bookings/${booking._id}`)}>
               View Details
             </Button>
           )}

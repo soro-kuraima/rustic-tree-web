@@ -1,29 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { format } from 'date-fns';
 import { motion } from 'motion/react';
 import { useClerkUserSync } from '../hooks/useClerkUserSync';
-import { useAuthStore } from '../stores/auth-store';
 import PageContainer from '../components/layout/PageContainer';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
-import { ArrowLeft, Calendar, CreditCard, Download, Home, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, Download, Users } from 'lucide-react';
 import { Separator } from '../components/ui/separator';
 import { toast } from 'sonner';
 import { Id } from '../../convex/_generated/dataModel';
-import { Booking, BookingStatus } from '../types';
+import { BookingStatus } from '../types';
 
 const BookingDetailPage: React.FC = () => {
   // Sync the user data with Convex
   useClerkUserSync();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { userId } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   
   // Convert string id to the proper Id type
@@ -33,7 +31,11 @@ const BookingDetailPage: React.FC = () => {
   const booking = useQuery(api.bookings.getById, { id: parsedBookingId });
   
   // Fetch room data for the booking
-  const room = booking ? useQuery(api.rooms.getById, { id: booking.roomId }) : null;
+  const room = useQuery(api.rooms.getById, { id: booking !== undefined ? booking?.roomId : "skip" as Id<'rooms'> });
+
+  const images = room?.images;
+    
+    const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[]});
   
   // Actions
   // Note: These mutations would need to be implemented in your Convex backend
@@ -75,7 +77,7 @@ const BookingDetailPage: React.FC = () => {
     }
   };
   
-  if (!booking || !room) {
+  if (!booking || !room || !roomImageUrls) {
     return (
       <PageContainer>
         <div className="py-8 px-4">
@@ -143,7 +145,7 @@ const BookingDetailPage: React.FC = () => {
               <CardContent>
                 <div className="relative h-64 rounded-md overflow-hidden mb-6">
                   <img 
-                    src={room.images[0] || "/api/placeholder/800/500"} 
+                    src={roomImageUrls[0].url || "/api/placeholder/800/500"} 
                     alt={room.name}
                     className="w-full h-full object-cover"
                   />

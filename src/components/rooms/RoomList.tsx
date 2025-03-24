@@ -8,7 +8,7 @@ import { Room } from '../../types';
 import { Skeleton } from '../ui/skeleton';
 
 const RoomList: React.FC = () => {
-  const { filters, setRooms, rooms, isLoading, setLoading, setError } = useRoomsStore();
+  const { filters, setRooms, rooms, isLoading, setLoading } = useRoomsStore();
   
   const roomsData = useQuery(api.rooms.get, {
     type: filters.type,

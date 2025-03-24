@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import PageContainer from '../components/layout/PageContainer';
 import RoomFilters from '../components/rooms/RoomFilters';

@@ -14,7 +14,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Skeleton } from '../components/ui/skeleton';
-import { useBookingStore } from '../stores/booking-store';
 import BookingSummary from '../components/booking/BookingSummary';
 import { toast } from 'sonner';
 import { User } from 'lucide-react';
@@ -30,7 +29,7 @@ const ProfilePage: React.FC = () => {
   useClerkUserSync();
   
   const { user } = useUser();
-  const { userId, user: convexUser } = useAuthStore();
+  const { userId } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Fetch user data from Convex

@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Room, DateRange } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
@@ -31,6 +30,7 @@ import { api } from '../../../convex/_generated/api';
 import { addDays, format, differenceInDays } from 'date-fns';
 import { useBookingStore } from '../../stores/booking-store';
 import { Id } from '../../../convex/_generated/dataModel';
+import { useAuth, useClerk } from '@clerk/clerk-react';
 
 interface RoomDetailsProps {
   room: Room;
@@ -52,6 +52,9 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
   const images = room?.images;
   
   const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[]});
+
+  const { isSignedIn } = useAuth();
+  const { openSignIn } = useClerk();
 
   // Control carousel when selectedImage changes
   useEffect(() => {
@@ -99,7 +102,7 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
   };
 
   // Custom date change handler
-  const handleDateChange = (value: any) => {
+  const handleDateChange = (value: DateRange) => {
     setDate(value);
     // Close calendar after selecting both dates
     if (value?.from && value?.to) {
@@ -108,9 +111,13 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
   };
 
   const handleBookNow = () => {
+  if (isSignedIn) {
+    openSignIn();
+  } else {
     // Make sure dates are set before booking
     if (date?.from && date?.to) {
       onBookNow();
+    }
     }
   };
 

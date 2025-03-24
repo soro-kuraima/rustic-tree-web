@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { NavLink } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { UserButton } from '@clerk/clerk-react';
 import { useIsMobile } from '../../hooks/use-mobile';
 import { Button } from '../ui/button';
@@ -8,8 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { Menu } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const location = useLocation();
+  const [, setIsScrolled] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
