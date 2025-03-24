@@ -28,7 +28,7 @@ const UserBookingsPage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="py-8"
+        className="py-8 px-4"
       >
         <BookingHistory />
       </motion.div>

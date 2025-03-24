@@ -15,7 +15,7 @@ const RoomPage: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="py-8"
+        className="py-8 px-4"
       >
         <div className="mb-8">
           <motion.h1 
@@ -26,16 +26,6 @@ const RoomPage: React.FC = () => {
           >
             Our Accommodations
           </motion.h1>
-          <motion.p 
-            className="text-gray-600 max-w-2xl"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            Discover our variety of rooms and suites, each offering a unique mountain experience with 
-            comfort and style. From cozy standard rooms to luxurious suites, we have the perfect 
-            accommodation for your stay.
-          </motion.p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

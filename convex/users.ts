@@ -123,7 +123,7 @@ export const getUserById = query({
     // Verify that the authenticated user is requesting their own data
     const authUser = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", `clerk:${identity.subject}`))
       .unique();
     
     if (!authUser || authUser._id !== user._id) {

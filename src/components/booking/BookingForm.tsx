@@ -12,9 +12,9 @@ import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { DateRange, Room } from '../../types';
 import { addDays, format, differenceInDays } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Id } from '../../../convex/_generated/dataModel';
 
 interface BookingFormProps {
   room: Room;
@@ -23,16 +23,21 @@ interface BookingFormProps {
 const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
   const navigate = useNavigate();
   const { userId } = useAuthStore();
-  const { setDateRange, setGuests, setRoomId, setTotalPrice, currentBooking } = useBookingStore();
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 1),
-  });
-  const [guests, setGuestsLocal] = useState<string>('1');
+  const { setDateRange, setGuests, setRoomId, setTotalPrice, currentBooking, } = useBookingStore();
+  const [date, setDate] = useState<DateRange | undefined>(
+    currentBooking?.dateRange || { 
+      from: new Date(), 
+      to: addDays(new Date(), 1) 
+    }
+  );
+  const [guests, setGuestsLocal] = useState<string>(
+    currentBooking?.guests?.toString() || '1'
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAvailabilityChecking, setIsAvailabilityChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const createBooking = useMutation(api.bookings.create);
 
@@ -56,7 +61,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
     setTotalPrice(totalPrice);
   }, [date, guests, room._id, totalPrice, setDateRange, setGuests, setRoomId, setTotalPrice]);
 
-    // Move the availability check to a React query hook
+  // Move the availability check to a React query hook
   const [availabilityParams, setAvailabilityParams] = useState<{
     roomId: Id<"rooms">;
     checkIn: number;
@@ -66,7 +71,6 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
   const availabilityResult = useQuery(
     api.bookings.checkAvailability,
     availabilityParams ?? { roomId: room._id, checkIn: 0, checkOut: 0 },
-    { enabled: availabilityParams !== null }
   );
   
   // Watch for changes in availability result
@@ -105,6 +109,15 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
     }
   }, [date]);
 
+  // Custom date change handler
+  const handleDateChange = (value: any) => {
+    setDate(value);
+    // Close calendar after selecting both dates
+    if (value?.from && value?.to) {
+      setTimeout(() => setIsCalendarOpen(false), 300);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -131,6 +144,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
       }
       
       // Create booking
+      console.log(userId);
       await createBooking({
         userId,
         roomId: room._id,
@@ -159,37 +173,50 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="date-range">Check-in / Check-out</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date-range"
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date?.from ? (
-                    date.to ? (
-                      <>
-                        {format(date.from, "MMM dd, yyyy")} - {format(date.to, "MMM dd, yyyy")}
-                      </>
-                    ) : (
-                      format(date.from, "MMM dd, yyyy")
-                    )
-                  ) : (
-                    <span>Select date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={date}
-                  onSelect={setDate as any}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            
+            {/* Date display */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="p-3 border rounded-md">
+                <p className="text-xs text-gray-500">Check-in</p>
+                <p className="font-medium">
+                  {date?.from ? format(date.from, "MMM dd, yyyy") : 'Select date'}
+                </p>
+              </div>
+              <div className="p-3 border rounded-md">
+                <p className="text-xs text-gray-500">Check-out</p>
+                <p className="font-medium">
+                  {date?.to ? format(date.to, "MMM dd, yyyy") : 'Select date'}
+                </p>
+              </div>
+            </div>
+            
+            {/* Button to toggle calendar */}
+            <div className="relative">
+              <Button
+                id="date-range"
+                type="button"
+                variant="outline"
+                className="w-full justify-start text-left font-normal flex items-center"
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {isCalendarOpen ? "Close Calendar" : "Change Dates"}
+              </Button>
+              
+              {/* Calendar popup */}
+              {isCalendarOpen && (
+                <div className="absolute z-50 bg-white border rounded-md shadow-lg mt-2 p-2 left-0 right-0">
+                  <Calendar
+                    mode="range"
+                    selected={date}
+                    onSelect={handleDateChange}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    numberOfMonths={1}
+                  />
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -229,7 +256,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
             </div>
             <div className="flex justify-between mb-1">
               <span>Price per night:</span>
-              <span>${room.discount 
+              <span>₹{room.discount 
                 ? (room.price - (room.price * (room.discount / 100))).toFixed(2) 
                 : room.price.toFixed(2)}
               </span>
@@ -240,7 +267,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ room }) => {
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t mt-2">
               <span>Total:</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span>₹{totalPrice.toFixed(2)}</span>
             </div>
           </div>
         </CardContent>

@@ -1,12 +1,13 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import { Booking } from '../../types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { CalendarDays, Users, CreditCard, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface BookingSummaryProps {
   booking: Booking;
@@ -20,6 +21,27 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
   isCompact = false,
 }) => {
   const room = useQuery(api.rooms.getById, { id: booking.roomId });
+
+  console.log(booking.userId);
+
+  const navigate = useNavigate();
+
+  const cancelBooking = useMutation(api.bookings.cancelBooking);
+  const confirmBooking = useMutation(api.bookings.confirmBooking);
+  const completeBooking = useMutation(api.bookings.completeBooking);
+
+  const handleBookingStatusUpdate = async (e: React.FormEvent, action: string) => {
+    e.preventDefault();
+
+    if (action === "cancel") {
+      await cancelBooking({id: booking._id});
+    }
+
+    if (action === "confirm") {
+      await confirmBooking({id: booking._id})
+    }
+    
+  }
 
   if (!room) {
     return (
@@ -94,7 +116,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
             <>
               <div className="flex items-center">
                 <CreditCard className="h-4 w-4 mr-2 text-gray-500" />
-                <span className="font-medium">${booking.totalPrice.toFixed(2)}</span>
+                <span className="font-medium">₹{booking.totalPrice.toFixed(2)}</span>
               </div>
               
               <div className="flex items-center">
@@ -112,7 +134,7 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           {isCompact && (
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-500">Total:</span>
-              <span className="font-medium">${booking.totalPrice.toFixed(2)}</span>
+              <span className="font-medium">₹{booking.totalPrice.toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -122,10 +144,10 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
         <CardFooter className="border-t pt-4">
           {booking.status === 'pending' && (
             <div className="w-full grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={(e) => handleBookingStatusUpdate(e, 'cancel')}>
                 Cancel
               </Button>
-              <Button size="sm">
+              <Button size="sm" onClick={(e) => handleBookingStatusUpdate(e, 'confirm')}>
                 Confirm
               </Button>
             </div>
@@ -138,7 +160,8 @@ const BookingSummary: React.FC<BookingSummaryProps> = ({
           )}
           
           {booking.status === 'cancelled' && (
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full"
+            onClick={() => navigate(`/rooms/${booking.roomId}`)}>
               Book Again
             </Button>
           )}

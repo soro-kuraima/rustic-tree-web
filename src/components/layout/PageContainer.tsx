@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import Navbar from './Navbar';
 
 const PageContainer = ({ children, showHeader = true, showFooter = true }) => {
   const canvasRef = useRef(null);
@@ -78,16 +79,7 @@ const PageContainer = ({ children, showHeader = true, showFooter = true }) => {
 
       {/* Header */}
       {showHeader && (
-        <header className="fixed top-0 w-full z-50">
-          <nav className="px-6 py-4 backdrop-blur-sm bg-stone-900/80">
-            <div className="flex justify-between items-center">
-              <div className="text-2xl font-bold tracking-wider">
-                Mountain Haven Retreat
-              </div>
-              {/* Add your navigation items here */}
-            </div>
-          </nav>
-        </header>
+        <Navbar />
       )}
 
       {/* Main page content */}
@@ -99,7 +91,7 @@ const PageContainer = ({ children, showHeader = true, showFooter = true }) => {
       {showFooter && (
         <footer className="mt-auto relative z-20 bg-stone-900/80 py-12 px-6 backdrop-blur-sm">
           <div className="max-w-6xl mx-auto text-center text-sm text-gray-300">
-            <p>© {new Date().getFullYear()} Mountain Haven Retreat. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} The Rustic Ridge. All rights reserved.</p>
           </div>
         </footer>
       )}

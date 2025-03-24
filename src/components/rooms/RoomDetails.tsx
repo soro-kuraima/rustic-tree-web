@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Room } from '../../types';
+import { Room, DateRange } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
   Carousel, 
   CarouselContent, 
   CarouselItem, 
   CarouselNext, 
-  CarouselPrevious 
+  CarouselPrevious,
+  type CarouselApi
 } from '../ui/carousel';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -17,13 +18,19 @@ import { Card, CardContent } from '../ui/card';
 import { 
   Bed, 
   Users, 
-  SquareDotIcon, 
+  SquareCheckIcon, 
   WifiIcon, 
   UtensilsIcon, 
   TvIcon, 
   ThermometerIcon, 
-  CarIcon 
+  CarIcon,
+  Calendar as CalendarIcon
 } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import { addDays, format, differenceInDays } from 'date-fns';
+import { useBookingStore } from '../../stores/booking-store';
+import { Id } from '../../../convex/_generated/dataModel';
 
 interface RoomDetailsProps {
   room: Room;
@@ -32,6 +39,47 @@ interface RoomDetailsProps {
 
 const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // Store the date range in booking store
+  const { setDateRange, setRoomId, setTotalPrice, currentBooking } = useBookingStore();
+  const [date, setDate] = useState<DateRange>(() => currentBooking?.dateRange ? currentBooking?.dateRange : {
+    from: new Date(),
+    to: addDays(new Date(), 1),
+  });
+
+  const images = room?.images;
+  
+  const roomImageUrls = useQuery(api.files.getBatchFileUrls, {storageIds: images as Id<"_storage">[]});
+
+  // Control carousel when selectedImage changes
+  useEffect(() => {
+    if (carouselApi) {
+      carouselApi.scrollTo(selectedImage);
+    }
+  }, [selectedImage, carouselApi]);
+
+  // Calculate number of nights
+  const nights = date?.from && date?.to
+    ? differenceInDays(date.to, date.from)
+    : 1;
+
+  // Calculate total price based on selected nights
+  const pricePerNight = room.discount 
+    ? room.price - (room.price * (room.discount / 100)) 
+    : room.price;
+    
+  const totalPrice = pricePerNight * Math.max(nights, 1);
+
+  // Update booking store when dates change
+  useEffect(() => {
+    if (date) {
+      setDateRange(date);
+      setRoomId(room._id);
+      setTotalPrice(totalPrice);
+    }
+  }, [date, room._id, totalPrice, setDateRange, setRoomId, setTotalPrice]);
 
   const amenityIcons: Record<string, React.ReactNode> = {
     "Free WiFi": <WifiIcon className="h-5 w-5" />,
@@ -41,27 +89,63 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
     "Free Parking": <CarIcon className="h-5 w-5" />,
   };
 
-  // Calculate the discounted price if there's a discount
-  const finalPrice = room.discount 
-    ? room.price - (room.price * (room.discount / 100)) 
-    : room.price;
+  // Update selected image when carousel changes
+  const handleCarouselChange = (api: CarouselApi) => {
+    if (!api) return;
+    
+    api.on("select", () => {
+      setSelectedImage(api.selectedScrollSnap());
+    });
+  };
+
+  // Custom date change handler
+  const handleDateChange = (value: any) => {
+    setDate(value);
+    // Close calendar after selecting both dates
+    if (value?.from && value?.to) {
+      setTimeout(() => setIsCalendarOpen(false), 300);
+    }
+  };
+
+  const handleBookNow = () => {
+    // Make sure dates are set before booking
+    if (date?.from && date?.to) {
+      onBookNow();
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto mx-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Room Images and Gallery - Takes up 2/3 of the screen on desktop */}
         <div className="lg:col-span-2">
-          <Carousel className="mb-4">
+          <Carousel 
+            className="mb-4" 
+            opts={{ loop: true, startIndex: selectedImage }}
+            setApi={(api) => {
+              setCarouselApi(api);
+              handleCarouselChange(api);
+            }}
+          >
             <CarouselContent>
-              {room.images.map((image, index) => (
+              {roomImageUrls !== undefined && roomImageUrls?.map((image, index) => (
                 <CarouselItem key={index}>
-                  <div className="relative aspect-video overflow-hidden rounded-lg">
-                    <img 
-                      src={image || "/api/placeholder/800/500"} 
-                      alt={`${room.name} - View ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  <AnimatePresence mode="wait">
+                    <motion.div 
+                      key={index}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="relative aspect-video overflow-hidden rounded-lg"
+                    >
+                      <img 
+                        src={image.url || "/api/placeholder/800/500"} 
+                        alt={`${room.name} - View ${index + 1}`}
+                        className="h-full object-cover"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </CarouselItem>
               ))}
             </CarouselContent>
@@ -70,16 +154,18 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
           </Carousel>
 
           <div className="grid grid-cols-5 gap-2 mb-8">
-            {room.images.slice(0, 5).map((image, index) => (
+            {roomImageUrls !== undefined && roomImageUrls?.slice(0, 5).map((image, index) => (
               <div 
                 key={index}
-                className={`aspect-video cursor-pointer rounded-md overflow-hidden ${
-                  selectedImage === index ? 'ring-2 ring-amber-500' : ''
+                className={`aspect-video cursor-pointer rounded-md overflow-hidden transition-all duration-200 ${
+                  selectedImage === index 
+                    ? 'ring-2 ring-amber-500 scale-105 shadow-md' 
+                    : 'hover:opacity-90 hover:ring-1 hover:ring-amber-300'
                 }`}
                 onClick={() => setSelectedImage(index)}
               >
                 <img 
-                  src={image || "/api/placeholder/200/150"} 
+                  src={image.url || "/api/placeholder/200/150"} 
                   alt={`Thumbnail ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
@@ -113,7 +199,7 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
                   </div>
                 </div>
                 <div className="flex items-center">
-                  <SquareDotIcon className="h-5 w-5 text-amber-600 mr-3" />
+                  <SquareCheckIcon className="h-5 w-5 text-amber-600 mr-3" />
                   <div>
                     <p className="font-medium">Room Size</p>
                     <p className="text-gray-600">{room.size} m²</p>
@@ -182,10 +268,10 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
                   {room.discount ? (
                     <>
                       <span className="text-3xl font-bold text-amber-600">
-                        ${finalPrice.toFixed(2)}
+                        ₹{pricePerNight.toFixed(2)}
                       </span>
                       <span className="text-lg text-gray-500 ml-2 line-through">
-                        ${room.price.toFixed(2)}
+                        ₹{room.price.toFixed(2)}
                       </span>
                       <span className="text-lg text-gray-600 ml-2">
                         /night
@@ -194,7 +280,7 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
                   ) : (
                     <>
                       <span className="text-3xl font-bold text-amber-600">
-                        ${room.price.toFixed(2)}
+                        ₹{room.price.toFixed(2)}
                       </span>
                       <span className="text-lg text-gray-600 ml-2">
                         /night
@@ -212,14 +298,73 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
               
               <div className="border-t border-gray-200 my-6 pt-6">
                 <h4 className="font-medium mb-4">Select Dates</h4>
-                <Calendar
-                  mode="range"
-                  className="border rounded-md p-3"
-                />
+                
+                {/* Calendar popup with button */}
+                <div className="space-y-4">
+                  <div className="flex flex-col space-y-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 border rounded-md">
+                        <p className="text-xs text-gray-500">Check-in</p>
+                        <p className="font-medium">
+                          {date.from ? format(date.from, "MMM dd, yyyy") : 'Select date'}
+                        </p>
+                      </div>
+                      <div className="p-3 border rounded-md">
+                        <p className="text-xs text-gray-500">Check-out</p>
+                        <p className="font-medium">
+                          {date.to ? format(date.to, "MMM dd, yyyy") : 'Select date'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Regular button to open calendar dialog */}
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsCalendarOpen(!isCalendarOpen)} 
+                    className="w-full flex items-center justify-center"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {isCalendarOpen ? "Close Calendar" : "Change Dates"}
+                  </Button>
+                  
+                  {/* Calendar dialog */}
+                  {isCalendarOpen && (
+                    <div className="absolute z-50 bg-white border rounded-md shadow-lg mt-2 p-2">
+                      <Calendar
+                        mode="range"
+                        selected={date}
+                        onSelect={handleDateChange}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                        numberOfMonths={1}
+                      />
+                    </div>
+                  )}
+                  
+                  {date?.from && date?.to && (
+                    <div className="mt-4 bg-gray-50 p-4 rounded-md">
+                      <p className="flex justify-between mb-1">
+                        <span className="text-gray-600">₹{pricePerNight.toFixed(2)} x {nights} nights</span>
+                        <span className="font-medium">₹{totalPrice.toFixed(2)}</span>
+                      </p>
+                      <p className="flex justify-between font-medium text-lg pt-2 border-t mt-2">
+                        <span>Total</span>
+                        <span>₹{totalPrice.toFixed(2)}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <Button onClick={onBookNow} className="w-full mb-4">
-                Book Now
+              <Button 
+                onClick={handleBookNow} 
+                className="w-full mb-4"
+                disabled={!date?.from || !date?.to || nights < 1}
+              >
+                {!date?.from || !date?.to || nights < 1
+                  ? "Select dates to book" 
+                  : "Book Now"}
               </Button>
               
               <p className="text-sm text-gray-500 text-center">
