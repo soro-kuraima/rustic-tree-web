@@ -111,7 +111,7 @@ const RoomDetails: React.FC<RoomDetailsProps> = ({ room, onBookNow }) => {
   };
 
   const handleBookNow = () => {
-  if (isSignedIn) {
+  if (!isSignedIn) {
     openSignIn();
   } else {
     // Make sure dates are set before booking
